@@ -64,7 +64,8 @@ inline std::string DType2String(const tvm::Type typ) {
   } else if (tvm_type.code == kDLUInt) {
     os << "uint";
   } else {
-    LOG(FATAL) << "Unknown type";
+    LOG(FATAL) << "Unknown type with code "
+      << static_cast<unsigned>(tvm_type.code);
   }
   os << typ.bits();
   return os.str();
