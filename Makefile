@@ -82,6 +82,10 @@ jnilint:
 
 lint: cpplint pylint jnilint
 
+# Test scripts
+pyunittest:
+	./tests/scripts/task_python_unittest.sh
+
 doc:
 	doxygen docs/Doxyfile
 
