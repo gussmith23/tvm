@@ -29,7 +29,6 @@
 #include <unordered_map>
 #include <vector>
 #include "../arithmetic/compute_expr.h"
-#include "../codegen/datatype/registry.h"
 
 namespace tvm {
 namespace ir {
@@ -99,15 +98,6 @@ class Vectorizer : public StmtExprMutator {
   Vectorizer(Var var, int var_lanes)
       : var_(var), var_lanes_(var_lanes) {
     ramp_ = Ramp::make(0, 1, var_lanes);
-  }
-
-  // Don't run on custom datatypes.
-  // TODO(gus) can this be removed now? I think we implemented another way to
-  // disable vectorization.
-  Expr VisitExpr(Expr expr) final {
-    if (tvm::datatype::Registry::Global()->GetTypeRegistered(expr.type().code()))
-      return expr;
-    return IRMutator::Mutate(expr);
   }
 
   Stmt VisitStmt(const Stmt& stmt) final {
