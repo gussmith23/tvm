@@ -45,6 +45,7 @@ tvm_option(DLPACK_PATH "Path to DLPACK" "3rdparty/dlpack/include")
 tvm_option(DMLC_PATH "Path to DMLC" "3rdparty/dmlc-core/include")
 tvm_option(RANG_PATH "Path to RANG" "3rdparty/rang/include")
 tvm_option(COMPILER_RT_PATH "Path to COMPILER-RT" "3rdparty/compiler-rt")
+tvm_option(UNIVERSAL_PATH "Path to Universal" "3rdparty/universal")
 
 # Contrib library options
 tvm_option(USE_BLAS "The blas library to be linked" none)
@@ -65,6 +66,7 @@ include_directories(${DLPACK_PATH})
 include_directories(${DMLC_PATH})
 include_directories(${RANG_PATH})
 include_directories(${COMPILER_RT_PATH})
+include_directories(${UNIVERSAL_PATH})
 
 # initial variables
 set(TVM_LINKER_LIBS "")
@@ -168,6 +170,7 @@ if(NOT USE_RTTI)
 endif()
 
 list(APPEND RUNTIME_SRCS 3rdparty/bfloat16/bfloat16.cc)
+list(APPEND RUNTIME_SRCS 3rdparty/posit/posit-wrapper.cc)
 
 if(USE_RPC)
   message(STATUS "Build with RPC support...")
