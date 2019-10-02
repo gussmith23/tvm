@@ -196,6 +196,12 @@ def change_dtype(src, dst, expr, params, executor):
     return expr, params
 
 def test_ops_same_function(src_dtype, dst_dtype):
+    """Run the same op, but with two different datatypes
+
+    As opposed to the current implementation of test_ops, which uses an
+    op and a reference implementation of that op. This version of this
+    function probably makes more sense for testing datatypes---the thing
+    we change is the datatype, not the op itself."""
     def check_unary_op(op, src_dtype, dst_dtype):
         t1 = relay.TensorType((5, 10, 5))
         x = relay.var("x", t1)
@@ -215,20 +221,54 @@ def test_ops_same_function(src_dtype, dst_dtype):
         maybe_correct_converted = convert_ndarray(src_dtype, maybe_correct, ex)
         np.testing.assert_allclose(
             maybe_correct_converted.asnumpy(), correct.asnumpy(), rtol=0.0001, atol=0.0001)
-        print(maybe_correct_converted)
-        print(correct)
+        # print(maybe_correct_converted)
+        # print(correct)
 
     for op in [
-            #(tvm.relay.log, np.log),
-            #(tvm.relay.exp, np.exp),
-            # (tvm.relay.sqrt, np.sqrt),
-            # (tvm.relay.rsqrt, rsqrt),
-            # #(tvm.relay.sigmoid, sigmoid),
-            # #(tvm.relay.tanh, np.tanh),
-            # (relay.nn.relu, relu),
+            # TODO(gus) implement these
+            #tvm.relay.log,
+            tvm.relay.exp,
+            tvm.relay.sqrt,
+            tvm.relay.rsqrt,
+            # TODO(gus) implement these
+            #tvm.relay.sigmoid,
+            # TODO(gus) implement these
+            #tvm.relay.tanh,
+            relay.nn.relu,
             relay.nn.softmax]:
         check_unary_op(op, src_dtype, dst_dtype)
 
+    def check_binary_op(opfunc, src_dtype, dst_dtype):
+        t1 = relay.TensorType((5, 10, 5), src_dtype)
+        t2 = relay.TensorType((5, ), src_dtype)
+        x = relay.var("x", t1)
+        y = relay.var("y", t2)
+        z = opfunc(x, y)
+        x_data = np.random.rand(5, 10, 5).astype(t1.dtype)
+        y_data = np.random.rand(5).astype(t2.dtype)
+        func = relay.Function([x, y], z)
+
+        ex = relay.create_executor("graph")
+
+        correct = ex.evaluate(func)(x_data, y_data)
+
+        func, _ = change_dtype(src_dtype, dst_dtype, func, [], ex)
+
+        x_converted = convert_ndarray(dst_dtype, x_data, ex)
+        y_converted = convert_ndarray(dst_dtype, y_data, ex)
+
+        maybe_correct = ex.evaluate(func)(x_converted, y_converted)
+        maybe_correct_converted = convert_ndarray(src_dtype, maybe_correct, ex)
+        np.testing.assert_allclose(
+            correct.asnumpy(), maybe_correct_converted.asnumpy(), rtol=0.001, atol=0.001)
+
+    for op in [
+            #relay.add,
+            relay.subtract,
+            relay.divide,
+            relay.multiply,
+    ]:
+        check_binary_op(op, src_dtype, dst_dtype)
 
 def test_ops(src_dtype, dst_dtype):
     def check_unary_op(opfunc, ref, src_dtype, dst_dtype):
