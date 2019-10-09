@@ -170,7 +170,7 @@ def test_ops_same_function(src_dtype, dst_dtype):
             correct.asnumpy(), maybe_correct_converted.asnumpy(), rtol=0.001, atol=0.001)
 
     for op in [
-            #relay.add,
+            relay.add,
             relay.subtract,
             relay.divide,
             relay.multiply,
