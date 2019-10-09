@@ -186,7 +186,6 @@ def change_dtype(src, dst, expr, params, executor):
     expr = cdtype.visit(expr['main'])
     expr = transform.InferType()(relay.Module.from_expr(expr))
     expr = expr['main']
-    #raise "pause"
     params = dict(
         (p, convert_ndarray(dst, params[p], executor)) for p in params)
     return expr, params
