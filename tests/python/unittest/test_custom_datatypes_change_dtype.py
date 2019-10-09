@@ -128,8 +128,6 @@ def test_ops_same_function(src_dtype, dst_dtype):
         maybe_correct_converted = convert_ndarray(src_dtype, maybe_correct, ex)
         np.testing.assert_allclose(
             maybe_correct_converted.asnumpy(), correct.asnumpy(), rtol=0.0001, atol=0.0001)
-        # print(maybe_correct_converted)
-        # print(correct)
 
     for op in [
             # TODO(gus) implement these
