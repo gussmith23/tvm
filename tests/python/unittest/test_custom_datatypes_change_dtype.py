@@ -24,6 +24,7 @@ from tvm.relay.testing.inception_v3 import get_workload as get_inception
 from tvm.relay.testing.resnet import get_workload as get_resnet
 from tvm.relay.testing.mobilenet import get_workload as get_mobilenet
 from nose.tools import nottest
+from ctypes import *
 
 tgt = "llvm"
 
@@ -37,7 +38,8 @@ def setup():
 
     # To use datatype operations in an external library, you should first load
     # the library containing the datatype implementation:
-    # CDLL("libmybfloat16.so", RTLD_GLOBAL)
+    CDLL("/Users/tuanta/work/ada-hackathon/tvm/3rdparty/SoftPosit/build/Linux-x86_64-GCC/libsoftposit.so", RTLD_GLOBAL)
+    CDLL("/Users/tuanta/work/ada-hackathon/tvm/3rdparty/softposit-wrapper/mysoftposit.so", RTLD_GLOBAL)
     # In this case, the datatype library we are using is built right into TVM,
     # so we do not need to explicitly load any library.
 
@@ -45,6 +47,17 @@ def setup():
     # greater than 128 and has not already been chosen.
 
     tvm.datatype.register("posit", 131)
+    tvm.datatype.register("softposit", 132)
+
+    tvm.datatype.register_op(
+        tvm.datatype.create_lower_func("FloatToSoftPosit32es2"), "Cast",
+        "llvm", "softposit", "float")
+    tvm.datatype.register_op(
+        tvm.datatype.create_lower_func("SoftPosit32es2ToFloat"), "Cast",
+        "llvm", "float", "softposit")
+    tvm.datatype.register_op(
+        tvm.datatype.create_lower_func("SoftPosit32es2Add"), "Add",
+        "llvm", "softposit")
 
     tvm.datatype.register_op(
         tvm.datatype.create_lower_func("FloatToPosit32es2"), "Cast",
@@ -133,19 +146,19 @@ def run_ops(src_dtype, dst_dtype):
         np.testing.assert_allclose(
             maybe_correct_converted.asnumpy(), correct.asnumpy(), rtol=0.0001, atol=0.0001)
 
-    for op in [
-            # TODO(gus) implement these
-            #tvm.relay.log,
-            tvm.relay.exp,
-            tvm.relay.sqrt,
-            tvm.relay.rsqrt,
-            # TODO(gus) implement these
-            #tvm.relay.sigmoid,
-            # TODO(gus) implement these
-            #tvm.relay.tanh,
-            relay.nn.relu,
-            relay.nn.softmax]:
-        check_unary_op(op, src_dtype, dst_dtype)
+    #for op in [
+    #        # TODO(gus) implement these
+    #        #tvm.relay.log,
+    #        tvm.relay.exp,
+    #        tvm.relay.sqrt,
+    #        tvm.relay.rsqrt,
+    #        # TODO(gus) implement these
+    #        #tvm.relay.sigmoid,
+    #        # TODO(gus) implement these
+    #        #tvm.relay.tanh,
+    #        relay.nn.relu,
+    #        relay.nn.softmax]:
+    #   check_unary_op(op, src_dtype, dst_dtype)
 
     def check_binary_op(opfunc, src_dtype, dst_dtype):
         t1 = relay.TensorType((5, 10, 5), src_dtype)
@@ -173,9 +186,9 @@ def run_ops(src_dtype, dst_dtype):
 
     for op in [
             relay.add,
-            relay.subtract,
-            relay.divide,
-            relay.multiply,
+            #relay.subtract,
+            #relay.divide,
+            #relay.multiply,
     ]:
         check_binary_op(op, src_dtype, dst_dtype)
 
@@ -293,7 +306,8 @@ def run_conv2d(src_dtype, dst_dtype):
 
 
 def test_ops():
-    run_ops('float32', 'custom[posit]32')
+    #run_ops('float32', 'custom[posit]32')
+    run_ops('float32', 'custom[softposit]32')
 
 # disabled for now, because it's slow
 @nottest
