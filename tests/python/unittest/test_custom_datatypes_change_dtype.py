@@ -87,12 +87,14 @@ def setup():
         intrinsic_name="exp")
 
 def convert_ndarray(dst_dtype, array, executor):
+    """Converts an NDArray into the specified datatype"""
     x = relay.var('x', shape=array.shape, dtype=str(array.dtype))
     cast = relay.Function([x], x.astype(dst_dtype))
     return executor.evaluate(cast)(array)
 
 
 def change_dtype(src, dst, expr, params, executor):
+    """Change the datatype of a relay expression"""
     expr = relay.ir_pass.infer_type(expr)
     cdtype = relay.frontend.ChangeDatatype(src, dst)
     expr = cdtype.visit(expr)
