@@ -23,6 +23,7 @@ from tvm import relay
 from tvm.relay.testing.inception_v3 import get_workload as get_inception
 from tvm.relay.testing.resnet import get_workload as get_resnet
 from tvm.relay.testing.mobilenet import get_workload as get_mobilenet
+from nose.tools import nottest
 
 tgt = "llvm"
 
@@ -109,7 +110,7 @@ def change_dtype(src, dst, expr, params, executor):
         (p, convert_ndarray(dst, params[p], executor)) for p in params)
     return expr, params
 
-def test_ops(src_dtype, dst_dtype):
+def run_ops(src_dtype, dst_dtype):
     """Run the same op, but with two different datatypes"""
 
     def check_unary_op(op, src_dtype, dst_dtype):
@@ -179,7 +180,7 @@ def test_ops(src_dtype, dst_dtype):
         check_binary_op(op, src_dtype, dst_dtype)
 
 
-def test_model(get_workload, input_shape, src_dtype, dst_dtype):
+def run_model(get_workload, input_shape, src_dtype, dst_dtype):
     expr, params = get_workload()
 
     ex = relay.create_executor("graph")
@@ -206,7 +207,7 @@ def test_model(get_workload, input_shape, src_dtype, dst_dtype):
         convert_ndarray(src_dtype, result, ex).asnumpy(), correct.asnumpy(), rtol=0.001, atol=0.001)
 
 
-def test_conv2d(src_dtype, dst_dtype):
+def run_conv2d(src_dtype, dst_dtype):
     def run_test_conv2d(src_dtype,
                         dst_dtype,
                         scale,
@@ -290,11 +291,25 @@ def test_conv2d(src_dtype, dst_dtype):
     run_test_conv2d(src_dtype, dst_dtype, 1, dshape, kshape,
                     padding=(1, 1), channels=10, kernel_size=(3 ,3), dilation=(3, 3))
 
+
+def test_ops():
+    run_ops('float32', 'custom[posit]32')
+
+# disabled for now, because it's slow
+@nottest
+def test_conv2d():
+    run_conv2d('float32', 'custom[posit]32')
+
+# disabled for now, because it's slow
+@nottest
+def test_models():
+    run_model(get_mobilenet, (3, 224, 224), 'float32', 'custom[posit]32')
+    run_model(get_inception, (3, 299, 299), 'float32', 'custom[posit]32')
+    run_model(get_resnet, (3, 224, 224), 'float32', 'custom[posit]32')
+
 if __name__ == "__main__":
     setup()
-    test_ops('float32', 'custom[posit]32')
+    test_ops()
     # These all run very slowly:
-    #test_conv2d('float32', 'custom[posit]32')
-    #test_model(get_mobilenet, (3, 224, 224), 'float32', 'custom[posit]32')
-    #test_model(get_inception, (3, 299, 299), 'float32', 'custom[posit]32')
-    #test_model(get_resnet, (3, 224, 224), 'float32', 'custom[posit]32')
+    # test_conv2d()
+    # test_models()
