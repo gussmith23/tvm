@@ -34,7 +34,6 @@ def setup():
 
 
 
-    tvm.datatype.register("notbfloat", 130)
 
 
     tvm.datatype.register("posit", 131)
