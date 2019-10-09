@@ -32,103 +32,10 @@ def setup():
     # In this case, we have built the test functions used below right into TVM.
     # CDLL("libmybfloat16.so", RTLD_GLOBAL)
 
-    tvm.datatype.register("bfloat", 129)
 
-    tvm.datatype.register_op(
-        tvm.datatype.create_lower_func("FloatToBFloat16_wrapper"), "Cast",
-        "llvm", "bfloat", "float")
-    tvm.datatype.register_op(
-        tvm.datatype.create_lower_func("BFloat16ToFloat_wrapper"), "Cast",
-        "llvm", "float", "bfloat")
-    tvm.datatype.register_op(
-        tvm.datatype.create_lower_func("IntToBFloat16_wrapper"), "Cast",
-        "llvm", "bfloat", "int")
-    tvm.datatype.register_op(
-        tvm.datatype.create_lower_func("BFloat16Add_wrapper"), "Add", "llvm",
-        "bfloat")
-    tvm.datatype.register_op(
-        tvm.datatype.create_lower_func("BFloat16Sub_wrapper"), "Sub", "llvm",
-        "bfloat")
-    tvm.datatype.register_op(
-        tvm.datatype.create_lower_func("FloatToBFloat16_wrapper"), "FloatImm",
-        "llvm", "bfloat")
-    tvm.datatype.register_op(
-        tvm.datatype.create_lower_func("BFloat16Mul_wrapper"), "Mul", "llvm",
-        "bfloat")
-    tvm.datatype.register_op(
-        tvm.datatype.create_lower_func("BFloat16Div_wrapper"), "Div", "llvm",
-        "bfloat")
-    tvm.datatype.register_op(
-        tvm.datatype.create_lower_func("BFloat16Max_wrapper"), "Max", "llvm",
-        "bfloat")
-    tvm.datatype.register_op(
-        tvm.datatype.create_lower_func("BFloat16Sqrt_wrapper"),
-        "Call",
-        "llvm",
-        "bfloat",
-        intrinsic_name="sqrt")
-    # TODO(gus) not sure if this will work...
-    tvm.datatype.register_op(
-        tvm.datatype.lower_ite,
-        "Call",
-        "llvm",
-        "bfloat",
-        intrinsic_name="tvm_if_then_else")
-    tvm.datatype.register_op(
-        tvm.datatype.create_lower_func("BFloat16Exp_wrapper"),
-        "Call",
-        "llvm",
-        "bfloat",
-        intrinsic_name="exp")
 
     tvm.datatype.register("notbfloat", 130)
 
-    tvm.datatype.register_op(
-        tvm.datatype.create_lower_func("FloatToNotBFloat16_wrapper"), "Cast",
-        "llvm", "notbfloat", "float")
-    tvm.datatype.register_op(
-        tvm.datatype.create_lower_func("NotBFloat16ToFloat_wrapper"), "Cast",
-        "llvm", "float", "notbfloat")
-    tvm.datatype.register_op(
-        tvm.datatype.create_lower_func("IntToNotBFloat16_wrapper"), "Cast",
-        "llvm", "notbfloat", "int")
-    tvm.datatype.register_op(
-        tvm.datatype.create_lower_func("NotBFloat16Add_wrapper"), "Add",
-        "llvm", "notbfloat")
-    tvm.datatype.register_op(
-        tvm.datatype.create_lower_func("NotBFloat16Sub_wrapper"), "Sub",
-        "llvm", "notbfloat")
-    tvm.datatype.register_op(
-        tvm.datatype.create_lower_func("FloatToNotBFloat16_wrapper"),
-        "FloatImm", "llvm", "notbfloat")
-    tvm.datatype.register_op(
-        tvm.datatype.create_lower_func("NotBFloat16Mul_wrapper"), "Mul",
-        "llvm", "notbfloat")
-    tvm.datatype.register_op(
-        tvm.datatype.create_lower_func("NotBFloat16Div_wrapper"), "Div",
-        "llvm", "notbfloat")
-    tvm.datatype.register_op(
-        tvm.datatype.create_lower_func("NotBFloat16Max_wrapper"), "Max",
-        "llvm", "notbfloat")
-    tvm.datatype.register_op(
-        tvm.datatype.create_lower_func("NotBFloat16Sqrt_wrapper"),
-        "Call",
-        "llvm",
-        "notbfloat",
-        intrinsic_name="sqrt")
-    # TODO(gus) not sure if this will work...
-    tvm.datatype.register_op(
-        tvm.datatype.lower_ite,
-        "Call",
-        "llvm",
-        "notbfloat",
-        intrinsic_name="tvm_if_then_else")
-    tvm.datatype.register_op(
-        tvm.datatype.create_lower_func("NotBFloat16Exp_wrapper"),
-        "Call",
-        "llvm",
-        "notbfloat",
-        intrinsic_name="exp")
 
     tvm.datatype.register("posit", 131)
 
