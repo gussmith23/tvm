@@ -97,7 +97,6 @@ def change_dtype(src, dst, expr, params, executor):
     cdtype = relay.frontend.ChangeDatatype(src, dst)
     expr = cdtype.visit(expr)
     expr = relay.ir_pass.infer_type(expr)
-    #raise "pause"
     params = dict(
         (p, convert_ndarray(dst, params[p], executor)) for p in params)
     return expr, params
