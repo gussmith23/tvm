@@ -109,13 +109,9 @@ def change_dtype(src, dst, expr, params, executor):
         (p, convert_ndarray(dst, params[p], executor)) for p in params)
     return expr, params
 
-def test_ops_same_function(src_dtype, dst_dtype):
-    """Run the same op, but with two different datatypes
+def test_ops(src_dtype, dst_dtype):
+    """Run the same op, but with two different datatypes"""
 
-    As opposed to the current implementation of test_ops, which uses an
-    op and a reference implementation of that op. This version of this
-    function probably makes more sense for testing datatypes---the thing
-    we change is the datatype, not the op itself."""
     def check_unary_op(op, src_dtype, dst_dtype):
         t1 = relay.TensorType((5, 10, 5))
         x = relay.var("x", t1)
