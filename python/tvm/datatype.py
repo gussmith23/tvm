@@ -23,7 +23,9 @@ from .api import convert
 from .expr import Call as _Call, Cast as _Cast, FloatImm as _FloatImm, Call as _Call
 from ._ffi.runtime_ctypes import TVMType as _TVMType
 from . import _api_internal
-from .intrin import call_intrin
+from .intrin import call_intrin, _pack_buffer
+from ._ffi.function import register_func
+from .schedule import Buffer as _Buffer
 
 
 def register(type_name, type_code):
@@ -164,6 +166,41 @@ def create_lower_func(extern_func_name):
                           _Call.Extern, None, 0)
 
     return lower
+
+
+def create_lower_to_python_func(func, target, op, dtype, src_dtype=''):
+    """Create lowering function which lowers to the provided Python func
+
+    func: Python function which will be lowered to."""
+
+    registered_name = 'tvm.datatype.implementations.{}.{}.{}'.format(
+        target, op, dtype)
+    if src_dtype != '': registered_name += '.{}'.format(src_dtype)
+    register_func(registered_name, f=func, override=False)
+
+    def _my_call_packed(dtype, *args):
+        call_args = [
+            _pack_buffer(x) if isinstance(x, _Buffer) else x for x in args
+        ]
+        return _make.Call("int1", "tvm_call_packed", call_args,
+                          _Call.Intrinsic, None, 0)
+
+    def lower(op):
+        dtype = op.dtype
+        t = _TVMType(dtype)
+        if get_type_registered(t.type_code):
+            dtype = "uint" + str(t.bits)
+            if t.lanes > 1:
+                dtype += "x" + str(t.lanes)
+        if isinstance(op, (_Cast, _FloatImm)):
+            return _my_call_packed(dtype, registered_name, convert(op.value))
+        elif isinstance(op, _Call) and (op.call_type == _Call.Intrinsic or
+                                        op.call_type == _Call.PureIntrinsic):
+            return _my_call_packed(dtype, registered_name, convert(op.value))
+        return _my_call_packed(dtype, registered_name, *convert([op.a, op.b]))
+
+    return lower
+
 
 def lower_ite(ite_intrin):
     dtype = ite_intrin.dtype
