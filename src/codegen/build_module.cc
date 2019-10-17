@@ -519,6 +519,9 @@ Array<Array<LoweredFunc> > split_dev_host_funcs(const Array<LoweredFunc>& funcs,
   for (size_t i = 0; i < fhost.size(); ++i) {
     auto func = fhost[i];
     func = ir::BindDeviceType(func, target->device_type);
+    // TODO(gus) the other alternative is to lower custom datatypes before
+    // builtins
+    func = ir::LowerCustomDatatypes(func, target_host->target_name);
     func = ir::LowerTVMBuiltin(func);
     fhost.Set(i, func);
   }
@@ -526,6 +529,9 @@ Array<Array<LoweredFunc> > split_dev_host_funcs(const Array<LoweredFunc>& funcs,
   for (size_t i = 0; i < fhost.size(); ++i) {
     auto func = fhost[i];
     func = ir::LowerCustomDatatypes(func, target_host->target_name);
+    // TODO(gus) lower builtins because we may have added PackedFuncs
+    // ALSO: perhaps we need to lower before AND after???
+    func = ir::LowerTVMBuiltin(func);
     func = ir::LowerIntrin(func, target_host->target_name);
     func = ir::CombineContextCall(func);
     fhost.Set(i, func);
