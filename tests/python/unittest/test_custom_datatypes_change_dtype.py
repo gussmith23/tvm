@@ -25,6 +25,7 @@ from tvm.relay.testing.resnet import get_workload as get_resnet
 from tvm.relay.testing.mobilenet import get_workload as get_mobilenet
 from tvm.relay import transform
 from nose.tools import nottest
+import ctypes
 
 tgt = "llvm"
 
@@ -44,102 +45,6 @@ def setup():
 
     # You can pick a code for your datatype arbitrarily, as long as it is
     # greater than 128 and has not already been chosen.
-
-    tvm.datatype.register("posit", 131)
-
-    tvm.datatype.register_op(
-        tvm.datatype.create_lower_func("FloatToBFloat16_wrapper"), "Cast",
-        "llvm", "bfloat", "float")
-    tvm.datatype.register_op(
-        tvm.datatype.create_lower_func("BFloat16ToFloat_wrapper"), "Cast",
-        "llvm", "float", "bfloat")
-    tvm.datatype.register_op(
-        tvm.datatype.create_lower_func("IntToBFloat16_wrapper"), "Cast",
-        "llvm", "bfloat", "int")
-    tvm.datatype.register_op(
-        tvm.datatype.create_lower_func("BFloat16Add_wrapper"), "Add", "llvm",
-        "bfloat")
-    tvm.datatype.register_op(
-        tvm.datatype.create_lower_func("BFloat16Sub_wrapper"), "Sub", "llvm",
-        "bfloat")
-    tvm.datatype.register_op(
-        tvm.datatype.create_lower_func("FloatToBFloat16_wrapper"), "FloatImm",
-        "llvm", "bfloat")
-    tvm.datatype.register_op(
-        tvm.datatype.create_lower_func("BFloat16Mul_wrapper"), "Mul", "llvm",
-        "bfloat")
-    tvm.datatype.register_op(
-        tvm.datatype.create_lower_func("BFloat16Div_wrapper"), "Div", "llvm",
-        "bfloat")
-    tvm.datatype.register_op(
-        tvm.datatype.create_lower_func("BFloat16Max_wrapper"), "Max", "llvm",
-        "bfloat")
-    tvm.datatype.register_op(
-        tvm.datatype.create_lower_func("BFloat16Sqrt_wrapper"),
-        "Call",
-        "llvm",
-        "bfloat",
-        intrinsic_name="sqrt")
-    # TODO(gus) not sure if this will work...
-    tvm.datatype.register_op(tvm.datatype.lower_ite,
-                             "Call",
-                             "llvm",
-                             "bfloat",
-                             intrinsic_name="tvm_if_then_else")
-    tvm.datatype.register_op(
-        tvm.datatype.create_lower_func("BFloat16Exp_wrapper"),
-        "Call",
-        "llvm",
-        "bfloat",
-        intrinsic_name="exp")
-
-    tvm.datatype.register("notbfloat", 130)
-
-    tvm.datatype.register_op(
-        tvm.datatype.create_lower_func("FloatToNotBFloat16_wrapper"), "Cast",
-        "llvm", "notbfloat", "float")
-    tvm.datatype.register_op(
-        tvm.datatype.create_lower_func("NotBFloat16ToFloat_wrapper"), "Cast",
-        "llvm", "float", "notbfloat")
-    tvm.datatype.register_op(
-        tvm.datatype.create_lower_func("IntToNotBFloat16_wrapper"), "Cast",
-        "llvm", "notbfloat", "int")
-    tvm.datatype.register_op(
-        tvm.datatype.create_lower_func("NotBFloat16Add_wrapper"), "Add",
-        "llvm", "notbfloat")
-    tvm.datatype.register_op(
-        tvm.datatype.create_lower_func("NotBFloat16Sub_wrapper"), "Sub",
-        "llvm", "notbfloat")
-    tvm.datatype.register_op(
-        tvm.datatype.create_lower_func("FloatToNotBFloat16_wrapper"),
-        "FloatImm", "llvm", "notbfloat")
-    tvm.datatype.register_op(
-        tvm.datatype.create_lower_func("NotBFloat16Mul_wrapper"), "Mul",
-        "llvm", "notbfloat")
-    tvm.datatype.register_op(
-        tvm.datatype.create_lower_func("NotBFloat16Div_wrapper"), "Div",
-        "llvm", "notbfloat")
-    tvm.datatype.register_op(
-        tvm.datatype.create_lower_func("NotBFloat16Max_wrapper"), "Max",
-        "llvm", "notbfloat")
-    tvm.datatype.register_op(
-        tvm.datatype.create_lower_func("NotBFloat16Sqrt_wrapper"),
-        "Call",
-        "llvm",
-        "notbfloat",
-        intrinsic_name="sqrt")
-    # TODO(gus) not sure if this will work...
-    tvm.datatype.register_op(tvm.datatype.lower_ite,
-                             "Call",
-                             "llvm",
-                             "notbfloat",
-                             intrinsic_name="tvm_if_then_else")
-    tvm.datatype.register_op(
-        tvm.datatype.create_lower_func("NotBFloat16Exp_wrapper"),
-        "Call",
-        "llvm",
-        "notbfloat",
-        intrinsic_name="exp")
 
     tvm.datatype.register("posit", 131)
 
@@ -183,6 +88,46 @@ def setup():
     # TODO(gus) these aren't actually right. these are double min(actually lowest)/max.
     tvm.datatype.register_min_func(lambda num_bits: -1.79769e+308, "posit")
 
+    tvm.datatype.register("datatype_in_python", 132)
+
+    def __datatype_in_python_add(a, b):
+        print(a)
+        print(b)
+        return a + b
+
+    tvm.datatype.register_op(
+        tvm.datatype.create_lower_to_python_func(__datatype_in_python_add,
+                                                 'llvm', 'Add',
+                                                 'datatype_in_python'), "Add",
+        "llvm", "datatype_in_python")
+
+    def __datatype_in_python_cast_to_float(value):
+        print(value)
+        as_c_int32 = ctypes.c_int32(value)
+        as_float = ctypes.c_float.from_address(
+            ctypes.addressof(as_c_int32)).value
+        print("as float: {}".format(as_float))
+        return as_float
+
+    def __datatype_in_python_cast_from_float(value):
+        print(value)
+        as_c_float = ctypes.c_float(value)
+        as_int32 = ctypes.c_int32.from_address(
+            ctypes.addressof(as_c_float)).value
+        print(as_int32)
+        return as_int32
+
+    tvm.datatype.register_op(
+        tvm.datatype.create_lower_to_python_func(
+            __datatype_in_python_cast_to_float, 'llvm', 'Cast', 'float',
+            'datatype_in_python'), "Cast", "llvm", 'float',
+        "datatype_in_python")
+    tvm.datatype.register_op(
+        tvm.datatype.create_lower_to_python_func(
+            __datatype_in_python_cast_from_float, 'llvm', 'Cast',
+            'datatype_in_python', 'float'), "Cast", "llvm",
+        "datatype_in_python", 'float')
+
 
 def convert_ndarray(dst_dtype, array, executor):
     """Converts an NDArray into the specified datatype"""
@@ -204,9 +149,9 @@ def change_dtype(src, dst, expr, params, executor):
         (p, convert_ndarray(dst, params[p], executor)) for p in params)
     return expr, params
 
+
 def run_ops(src_dtype, dst_dtype):
     """Run the same op, but with two different datatypes"""
-
     def check_unary_op(op, src_dtype, dst_dtype):
         t1 = relay.TensorType((5, 10, 5))
         x = relay.var("x", t1)
@@ -228,8 +173,6 @@ def run_ops(src_dtype, dst_dtype):
                                    correct.asnumpy(),
                                    rtol=0.0001,
                                    atol=0.0001)
-        # print(maybe_correct_converted)
-        # print(correct)
 
     for op in [
             # TODO(gus) implement these
@@ -370,8 +313,8 @@ def run_conv2d(src_dtype, dst_dtype):
     # depthwise conv2d
     dshape = (1, 32, 18, 18)
     kshape = (32, 1, 3, 3)
-    run_test_conv2d("float32",
-                    "custom[bfloat]16",
+    run_test_conv2d(src_dtype,
+                    dst_dtype,
                     1,
                     dshape,
                     kshape,
@@ -387,8 +330,8 @@ def run_conv2d(src_dtype, dst_dtype):
     # group conv2d
     dshape = (1, 32, 18, 18)
     kshape = (32, 4, 3, 3)
-    run_test_conv2d("float32",
-                    "custom[bfloat]16",
+    run_test_conv2d(src_dtype,
+                    dst_dtype,
                     1,
                     dshape,
                     kshape,
@@ -400,8 +343,8 @@ def run_conv2d(src_dtype, dst_dtype):
     # also group conv2d
     dshape = (1, 32, 18, 18)
     kshape = (64, 1, 3, 3)
-    run_test_conv2d("float32",
-                    "custom[bfloat]16",
+    run_test_conv2d(src_dtype,
+                    dst_dtype,
                     1,
                     dshape,
                     kshape,
@@ -414,8 +357,8 @@ def run_conv2d(src_dtype, dst_dtype):
     # normal conv2d
     dshape = (1, 3, 224, 224)
     kshape = (10, 3, 3, 3)
-    run_test_conv2d("float32",
-                    "custom[bfloat]16",
+    run_test_conv2d(src_dtype,
+                    dst_dtype,
                     1,
                     dshape,
                     kshape,
@@ -426,8 +369,8 @@ def run_conv2d(src_dtype, dst_dtype):
     # dilated conv2d
     dshape = (1, 3, 18, 18)
     kshape = (10, 3, 3, 3)
-    run_test_conv2d("float32",
-                    "custom[bfloat]16",
+    run_test_conv2d(src_dtype,
+                    dst_dtype,
                     1,
                     dshape,
                     kshape,
@@ -437,14 +380,15 @@ def run_conv2d(src_dtype, dst_dtype):
                     dilation=(3, 3))
 
 
-
 def test_ops():
     run_ops('float32', 'custom[posit]32')
+
 
 # disabled for now, because it's slow
 @nottest
 def test_conv2d():
     run_conv2d('float32', 'custom[posit]32')
+
 
 # disabled for now, because it's slow
 @nottest
@@ -453,9 +397,48 @@ def test_models():
     run_model(get_inception, (3, 299, 299), 'float32', 'custom[posit]32')
     run_model(get_resnet, (3, 224, 224), 'float32', 'custom[posit]32')
 
+
+def test_datatype_in_python():
+    t1 = relay.TensorType((5, 10, 5))
+    x = relay.var("x", t1)
+    y = relay.var("y", t1)
+    add = x + y
+    func = relay.Function([x, y], add)
+
+    x_data = np.random.rand(5, 10, 5).astype(t1.dtype)
+    y_data = np.random.rand(5, 10, 5).astype(t1.dtype)
+
+    ex = relay.create_executor("graph")
+
+    correct = ex.evaluate(func)(x_data, y_data)
+
+    func, _ = change_dtype("float32", "custom[datatype_in_python]32", func, [],
+                           ex)
+
+    x_converted = convert_ndarray("custom[datatype_in_python]32", x_data, ex)
+    import pdb
+    pdb.set_trace()
+    y_converted = convert_ndarray("custom[datatype_in_python]32", y_data, ex)
+
+    maybe_correct = ex.evaluate(func)(x_converted, y_converted)
+
+
+def test_datatype_in_python_simple_cast():
+    t = relay.TensorType((1, 1), "float32")
+    x = relay.var("x", t)
+    program = x.astype("custom[datatype_in_python]32")
+    program = program.astype("float32")
+    program = relay.Function([x], program)
+    x_data = np.random.rand(1, 1).astype(t.dtype)
+    ex = relay.create_executor("graph")
+    np.testing.assert_equal(x_data, ex.evaluate(program)(x_data).asnumpy())
+
+
 if __name__ == "__main__":
     setup()
-    test_ops()
+    #test_ops()
     # These all run very slowly:
     # test_conv2d()
     # test_models()
+    #test_datatype_in_python()
+    test_datatype_in_python_simple_cast()
