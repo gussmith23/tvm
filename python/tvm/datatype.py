@@ -127,6 +127,9 @@ def register_op(lower_func,
                           + type_name
     _register_func(lower_func_name, lower_func)
 
+# TODO(gus) could probably make this a decorator if i want
+def register_min_func(func, type_name):
+    _register_func("tvm.datatype.min." + type_name, func)
 
 def create_lower_func(extern_func_name):
     """Returns a function which lowers an operation to a function call.

@@ -25,7 +25,9 @@
 #include <tvm/ir.h>
 #include <tvm/expr_operator.h>
 #include <memory>
+#include <tvm/runtime/registry.h>
 #include <limits>
+#include "../codegen/datatype/registry.h"
 
 namespace tvm {
 
