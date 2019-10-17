@@ -23,6 +23,7 @@ from tvm import relay
 from tvm.relay.testing.inception_v3 import get_workload as get_inception
 from tvm.relay.testing.resnet import get_workload as get_resnet
 from tvm.relay.testing.mobilenet import get_workload as get_mobilenet
+from tvm.relay import transform
 
 tgt = "llvm"
 
@@ -186,10 +187,10 @@ def convert_ndarray(dst_dtype, array, executor):
 
 
 def change_dtype(src, dst, expr, params, executor):
-    expr = relay.ir_pass.infer_type(expr)
+    expr = transform.InferType()(expr)
     cdtype = relay.frontend.ChangeDatatype(src, dst)
     expr = cdtype.visit(expr)
-    expr = relay.ir_pass.infer_type(expr)
+    expr = transform.InferType()(expr)
     #raise "pause"
     params = dict(
         (p, convert_ndarray(dst, params[p], executor)) for p in params)
