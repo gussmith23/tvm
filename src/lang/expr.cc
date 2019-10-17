@@ -25,7 +25,9 @@
 #include <tvm/ir.h>
 #include <tvm/expr_operator.h>
 #include <memory>
+#include <tvm/runtime/registry.h>
 #include <limits>
+#include "../codegen/datatype/registry.h"
 
 namespace tvm {
 
@@ -65,7 +67,14 @@ Expr DataType::max() const {
 Expr DataType::min() const {
   using namespace ir;
   CHECK_EQ(lanes(), 1);
-  if (is_int()) {
+  if (tvm::datatype::Registry::Global()->GetTypeRegistered(this->code())) {
+    auto type_name = tvm::datatype::Registry::Global()->GetTypeName(this->code());
+    // TODO(gus) document what the min func should do. right now it looks like it should return some
+    // float literal, taking in the # of bits.
+    auto get_min_func = tvm::runtime::Registry::Get("tvm.datatype.min." + type_name);
+    CHECK(get_min_func) << "Please register a minimum function for type " << type_name;
+    return FloatImm::make(*this, (*get_min_func)(this->bits()));
+  } else if (is_int()) {
     if (bits() == 64) {
       return IntImm::make(*this, std::numeric_limits<int64_t>::lowest());
     } else if (bits() < 64) {

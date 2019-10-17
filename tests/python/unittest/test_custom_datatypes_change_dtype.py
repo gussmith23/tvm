@@ -179,6 +179,9 @@ def setup():
         "llvm",
         "posit",
         intrinsic_name="exp")
+    # TODO(gus) these aren't actually right. these are double min(actually lowest)/max.
+    tvm.datatype.register_min_func(lambda num_bits: -1.79769e+308, "posit")
+
 
 def convert_ndarray(dst_dtype, array, executor):
     x = relay.var('x', shape=array.shape, dtype=str(array.dtype))
