@@ -69,12 +69,11 @@ def setup():
         "bfloat",
         intrinsic_name="sqrt")
     # TODO(gus) not sure if this will work...
-    tvm.datatype.register_op(
-        tvm.datatype.lower_ite,
-        "Call",
-        "llvm",
-        "bfloat",
-        intrinsic_name="tvm_if_then_else")
+    tvm.datatype.register_op(tvm.datatype.lower_ite,
+                             "Call",
+                             "llvm",
+                             "bfloat",
+                             intrinsic_name="tvm_if_then_else")
     tvm.datatype.register_op(
         tvm.datatype.create_lower_func("BFloat16Exp_wrapper"),
         "Call",
@@ -118,12 +117,11 @@ def setup():
         "notbfloat",
         intrinsic_name="sqrt")
     # TODO(gus) not sure if this will work...
-    tvm.datatype.register_op(
-        tvm.datatype.lower_ite,
-        "Call",
-        "llvm",
-        "notbfloat",
-        intrinsic_name="tvm_if_then_else")
+    tvm.datatype.register_op(tvm.datatype.lower_ite,
+                             "Call",
+                             "llvm",
+                             "notbfloat",
+                             intrinsic_name="tvm_if_then_else")
     tvm.datatype.register_op(
         tvm.datatype.create_lower_func("NotBFloat16Exp_wrapper"),
         "Call",
@@ -134,51 +132,42 @@ def setup():
     tvm.datatype.register("posit", 131)
 
     tvm.datatype.register_op(
-        tvm.datatype.create_lower_func("FloatToPosit32es2"), "Cast",
-        "llvm", "posit", "float")
+        tvm.datatype.create_lower_func("FloatToPosit32es2"), "Cast", "llvm",
+        "posit", "float")
     tvm.datatype.register_op(
-        tvm.datatype.create_lower_func("Posit32es2ToFloat"), "Cast",
-        "llvm", "float", "posit")
+        tvm.datatype.create_lower_func("Posit32es2ToFloat"), "Cast", "llvm",
+        "float", "posit")
+    tvm.datatype.register_op(tvm.datatype.create_lower_func("IntToPosit32es2"),
+                             "Cast", "llvm", "posit", "int")
+    tvm.datatype.register_op(tvm.datatype.create_lower_func("Posit32es2Add"),
+                             "Add", "llvm", "posit")
+    tvm.datatype.register_op(tvm.datatype.create_lower_func("Posit32es2Sub"),
+                             "Sub", "llvm", "posit")
     tvm.datatype.register_op(
-        tvm.datatype.create_lower_func("IntToPosit32es2"), "Cast",
-        "llvm", "posit", "int")
-    tvm.datatype.register_op(
-        tvm.datatype.create_lower_func("Posit32es2Add"), "Add",
+        tvm.datatype.create_lower_func("FloatToPosit32es2"), "FloatImm",
         "llvm", "posit")
-    tvm.datatype.register_op(
-        tvm.datatype.create_lower_func("Posit32es2Sub"), "Sub",
-        "llvm", "posit")
-    tvm.datatype.register_op(
-        tvm.datatype.create_lower_func("FloatToPosit32es2"),
-        "FloatImm", "llvm", "posit")
-    tvm.datatype.register_op(
-        tvm.datatype.create_lower_func("Posit32es2Mul"), "Mul",
-        "llvm", "posit")
-    tvm.datatype.register_op(
-        tvm.datatype.create_lower_func("Posit32es2Div"), "Div",
-        "llvm", "posit")
-    tvm.datatype.register_op(
-        tvm.datatype.create_lower_func("Posit32es2Max"), "Max",
-        "llvm", "posit")
-    tvm.datatype.register_op(
-        tvm.datatype.create_lower_func("Posit32es2Sqrt"),
-        "Call",
-        "llvm",
-        "posit",
-        intrinsic_name="sqrt")
+    tvm.datatype.register_op(tvm.datatype.create_lower_func("Posit32es2Mul"),
+                             "Mul", "llvm", "posit")
+    tvm.datatype.register_op(tvm.datatype.create_lower_func("Posit32es2Div"),
+                             "Div", "llvm", "posit")
+    tvm.datatype.register_op(tvm.datatype.create_lower_func("Posit32es2Max"),
+                             "Max", "llvm", "posit")
+    tvm.datatype.register_op(tvm.datatype.create_lower_func("Posit32es2Sqrt"),
+                             "Call",
+                             "llvm",
+                             "posit",
+                             intrinsic_name="sqrt")
     # TODO(gus) not sure if this will work...
-    tvm.datatype.register_op(
-        tvm.datatype.lower_ite,
-        "Call",
-        "llvm",
-        "posit",
-        intrinsic_name="tvm_if_then_else")
-    tvm.datatype.register_op(
-        tvm.datatype.create_lower_func("Posit32es2Exp"),
-        "Call",
-        "llvm",
-        "posit",
-        intrinsic_name="exp")
+    tvm.datatype.register_op(tvm.datatype.lower_ite,
+                             "Call",
+                             "llvm",
+                             "posit",
+                             intrinsic_name="tvm_if_then_else")
+    tvm.datatype.register_op(tvm.datatype.create_lower_func("Posit32es2Exp"),
+                             "Call",
+                             "llvm",
+                             "posit",
+                             intrinsic_name="exp")
     # TODO(gus) these aren't actually right. these are double min(actually lowest)/max.
     tvm.datatype.register_min_func(lambda num_bits: -1.79769e+308, "posit")
 
@@ -201,6 +190,7 @@ def change_dtype(src, dst, expr, params, executor):
     params = dict(
         (p, convert_ndarray(dst, params[p], executor)) for p in params)
     return expr, params
+
 
 def test_ops_same_function(src_dtype, dst_dtype):
     """Run the same op, but with two different datatypes
@@ -226,8 +216,10 @@ def test_ops_same_function(src_dtype, dst_dtype):
         x_converted = convert_ndarray(dst_dtype, x_data, ex)
         maybe_correct = ex.evaluate(func)(x_converted)
         maybe_correct_converted = convert_ndarray(src_dtype, maybe_correct, ex)
-        np.testing.assert_allclose(
-            maybe_correct_converted.asnumpy(), correct.asnumpy(), rtol=0.0001, atol=0.0001)
+        np.testing.assert_allclose(maybe_correct_converted.asnumpy(),
+                                   correct.asnumpy(),
+                                   rtol=0.0001,
+                                   atol=0.0001)
         # print(maybe_correct_converted)
         # print(correct)
 
@@ -242,7 +234,8 @@ def test_ops_same_function(src_dtype, dst_dtype):
             # TODO(gus) implement these
             #tvm.relay.tanh,
             relay.nn.relu,
-            relay.nn.softmax]:
+            relay.nn.softmax
+    ]:
         check_unary_op(op, src_dtype, dst_dtype)
 
     def check_binary_op(opfunc, src_dtype, dst_dtype):
@@ -266,8 +259,10 @@ def test_ops_same_function(src_dtype, dst_dtype):
 
         maybe_correct = ex.evaluate(func)(x_converted, y_converted)
         maybe_correct_converted = convert_ndarray(src_dtype, maybe_correct, ex)
-        np.testing.assert_allclose(
-            correct.asnumpy(), maybe_correct_converted.asnumpy(), rtol=0.001, atol=0.001)
+        np.testing.assert_allclose(correct.asnumpy(),
+                                   maybe_correct_converted.asnumpy(),
+                                   rtol=0.001,
+                                   atol=0.001)
 
     for op in [
             #relay.add,
@@ -276,6 +271,7 @@ def test_ops_same_function(src_dtype, dst_dtype):
             relay.multiply,
     ]:
         check_binary_op(op, src_dtype, dst_dtype)
+
 
 def test_ops(src_dtype, dst_dtype):
     def check_unary_op(opfunc, ref, src_dtype, dst_dtype):
@@ -300,8 +296,10 @@ def test_ops(src_dtype, dst_dtype):
                 op_res = intrp.evaluate(func)(x_converted)
                 op_res_converted = convert_ndarray(src_dtype, op_res, ex)
                 # TODO(gus) increased the tolerance an unreasonable amount
-                np.testing.assert_allclose(
-                    op_res_converted.asnumpy(), ref_res, rtol=0.0001, atol=0.0001)
+                np.testing.assert_allclose(op_res_converted.asnumpy(),
+                                           ref_res,
+                                           rtol=0.0001,
+                                           atol=0.0001)
 
     def check_binary_op(opfunc, ref, src_dtype, dst_dtype):
         if ref is not None:
@@ -326,8 +324,10 @@ def test_ops(src_dtype, dst_dtype):
                 y_converted = convert_ndarray(dst_dtype, y_data, ex)
                 op_res = intrp.evaluate(func)(x_converted, y_converted)
                 op_res_converted = convert_ndarray(src_dtype, op_res, ex)
-                np.testing.assert_allclose(
-                    op_res_converted.asnumpy(), ref_res, rtol=0.001, atol=0.001)
+                np.testing.assert_allclose(op_res_converted.asnumpy(),
+                                           ref_res,
+                                           rtol=0.001,
+                                           atol=0.001)
 
     def my_func(x, y):
         a = relay.add(x, y)
@@ -362,7 +362,7 @@ def test_ops(src_dtype, dst_dtype):
     # #check_binary_op(my_func, my_func_np, src_dtype, dst_dtype)
     # check_unary_op(relay.nn.relu, relu, src_dtype, dst_dtype)
     ex = tvm.relay.create_executor("graph")
-    x = relay.var("x", shape=(5,10,5))
+    x = relay.var("x", shape=(5, 10, 5))
     softmax_relay = relay.Function([x], relay.nn.softmax(x))
     for opfunc, ref in [
             #(tvm.relay.log, np.log),
@@ -372,11 +372,12 @@ def test_ops(src_dtype, dst_dtype):
             # #(tvm.relay.sigmoid, sigmoid),
             # #(tvm.relay.tanh, np.tanh),
             # (relay.nn.relu, relu),
-            (relay.nn.softmax, lambda x: ex.evaluate(softmax_relay)(x).asnumpy()),
+        (relay.nn.softmax, lambda x: ex.evaluate(softmax_relay)(x).asnumpy()),
             #(relay.nn.softmax, softmax)
-            ]:
+    ]:
         check_unary_op(opfunc, ref, src_dtype, dst_dtype)
     exit(0)
+
 
 def test_softmax():
     def softmax(x):
@@ -401,8 +402,11 @@ def test_softmax():
         op_res = intrp.evaluate(func)(x_converted)
         op_res_converted = convert_ndarray(src_dtype, op_res, ex)
         # TODO(gus) increased the tolerance an unreasonable amount
-        np.testing.assert_allclose(
-            op_res_converted.asnumpy(), ref_res, rtol=0.001, atol=0.1)
+        np.testing.assert_allclose(op_res_converted.asnumpy(),
+                                   ref_res,
+                                   rtol=0.001,
+                                   atol=0.1)
+
 
 def test_change_dtype_simple():
     shape = (3, 1)
@@ -501,6 +505,7 @@ def test_change_dtype_mobilenet():
         result = ex.evaluate(expr)(input, **params)
         print(convert_ndarray("float32", result, ex))
 
+
 def test_model(get_workload, input_shape, src_dtype, dst_dtype):
     expr, params = get_workload()
 
@@ -524,8 +529,11 @@ def test_model(get_workload, input_shape, src_dtype, dst_dtype):
         print(correct)
         print(convert_ndarray(src_dtype, result, ex))
 
-    tvm.testing.assert_allclose(
-        convert_ndarray(src_dtype, result, ex).asnumpy(), correct.asnumpy(), rtol=0.001, atol=0.001)
+    tvm.testing.assert_allclose(convert_ndarray(src_dtype, result,
+                                                ex).asnumpy(),
+                                correct.asnumpy(),
+                                rtol=0.001,
+                                atol=0.001)
 
 
 def test_conv2d():
@@ -545,12 +553,16 @@ def test_conv2d():
 
         x = relay.var("x", shape=dshape, dtype=src_dtype)
         w = relay.var("w", dtype=src_dtype)
-        y = relay.nn.conv2d(
-            x, w, padding=padding, dilation=dilation, groups=groups, **attrs)
+        y = relay.nn.conv2d(x,
+                            w,
+                            padding=padding,
+                            dilation=dilation,
+                            groups=groups,
+                            **attrs)
         func = relay.Function([x, w], y)
         data = np.random.uniform(-scale, scale, size=dshape).astype(src_dtype)
-        kernel = np.random.uniform(
-            -scale, scale, size=kshape).astype(src_dtype)
+        kernel = np.random.uniform(-scale, scale,
+                                   size=kshape).astype(src_dtype)
         dkernel = topi.testing.dilate_python(kernel, (1, 1) + dilation)
         if fref is None:
             ref_res = topi.testing.conv2d_nchw_python(
@@ -571,46 +583,84 @@ def test_conv2d():
             data_converted = convert_ndarray(dst_dtype, data, intrp1)
             kernel_converted = convert_ndarray(dst_dtype, kernel, intrp1)
             with tvm.build_config(disable_vectorize=True):
-                op_res1 = intrp1.evaluate(func)(data_converted, kernel_converted)
+                op_res1 = intrp1.evaluate(func)(data_converted,
+                                                kernel_converted)
             op_res1_converted = convert_ndarray(src_dtype, op_res1, intrp1)
             # TODO(gus) previous rtol, atol 1e-5
-            tvm.testing.assert_allclose(
-                op_res1_converted.asnumpy(), ref_res, rtol=0.5, atol=0.5)
+            tvm.testing.assert_allclose(op_res1_converted.asnumpy(),
+                                        ref_res,
+                                        rtol=0.5,
+                                        atol=0.5)
 
     # depthwise conv2d
     dshape = (1, 32, 18, 18)
     kshape = (32, 1, 3, 3)
-    run_test_conv2d("float32", "custom[bfloat]16", 1, dshape, kshape,
-                    padding=(1, 1), channels=32, groups=32, kernel_size=(3 ,3),
-                    fref=lambda x, w: topi.testing.depthwise_conv2d_python_nchw(
-                        x, w, (1, 1), "SAME"))
+    run_test_conv2d("float32",
+                    "custom[bfloat]16",
+                    1,
+                    dshape,
+                    kshape,
+                    padding=(1, 1),
+                    channels=32,
+                    groups=32,
+                    kernel_size=(3, 3),
+                    fref=lambda x, w: topi.testing.
+                    depthwise_conv2d_python_nchw(x, w, (1, 1), "SAME"))
 
     # CUDA is disabled for 'direct' schedule:
     # https://github.com/dmlc/tvm/pull/3070#issuecomment-486597553
     # group conv2d
     dshape = (1, 32, 18, 18)
     kshape = (32, 4, 3, 3)
-    run_test_conv2d("float32", "custom[bfloat]16", 1, dshape, kshape,
-                    padding=(1, 1), channels=32, groups=8, kernel_size=(3 ,3),
+    run_test_conv2d("float32",
+                    "custom[bfloat]16",
+                    1,
+                    dshape,
+                    kshape,
+                    padding=(1, 1),
+                    channels=32,
+                    groups=8,
+                    kernel_size=(3, 3),
                     except_targets=['cuda'])
     # also group conv2d
     dshape = (1, 32, 18, 18)
     kshape = (64, 1, 3, 3)
-    run_test_conv2d("float32", "custom[bfloat]16", 1, dshape, kshape,
-                    padding=(1, 1), channels=64, groups=32, kernel_size=(3 ,3),
+    run_test_conv2d("float32",
+                    "custom[bfloat]16",
+                    1,
+                    dshape,
+                    kshape,
+                    padding=(1, 1),
+                    channels=64,
+                    groups=32,
+                    kernel_size=(3, 3),
                     except_targets=['cuda'])
 
     # normal conv2d
     dshape = (1, 3, 224, 224)
     kshape = (10, 3, 3, 3)
-    run_test_conv2d("float32", "custom[bfloat]16", 1, dshape, kshape,
-                    padding=(1, 1), channels=10, kernel_size=(3 ,3))
+    run_test_conv2d("float32",
+                    "custom[bfloat]16",
+                    1,
+                    dshape,
+                    kshape,
+                    padding=(1, 1),
+                    channels=10,
+                    kernel_size=(3, 3))
 
     # dilated conv2d
     dshape = (1, 3, 18, 18)
     kshape = (10, 3, 3, 3)
-    run_test_conv2d("float32", "custom[bfloat]16", 1, dshape, kshape,
-                    padding=(1, 1), channels=10, kernel_size=(3 ,3), dilation=(3, 3))
+    run_test_conv2d("float32",
+                    "custom[bfloat]16",
+                    1,
+                    dshape,
+                    kshape,
+                    padding=(1, 1),
+                    channels=10,
+                    kernel_size=(3, 3),
+                    dilation=(3, 3))
+
 
 if __name__ == "__main__":
     setup()
