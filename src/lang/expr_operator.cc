@@ -118,7 +118,14 @@ Expr max_value(const DataType& dtype) {
 Expr min_value(const DataType& dtype) {
   using namespace ir;
   CHECK_EQ(dtype.lanes(), 1);
-  if (dtype.is_int()) {
+  if (tvm::datatype::Registry::Global()->GetTypeRegistered(dtype.code())) {
+    auto type_name = tvm::datatype::Registry::Global()->GetTypeName(dtype.code());
+    // TODO(gus) document what the min func should do. right now it looks like it should return some
+    // float literal, taking in the # of bits.
+    auto get_min_func = tvm::runtime::Registry::Get("tvm.datatype.min." + type_name);
+    CHECK(get_min_func) << "Please register a minimum function for type " << type_name;
+    return FloatImm::make(dtype, (*get_min_func)(dtype.bits()));
+  } else if (dtype.is_int()) {
     if (dtype.bits() == 64) {
       return IntImm::make(dtype, std::numeric_limits<int64_t>::lowest());
     } else if (dtype.bits() < 64) {
