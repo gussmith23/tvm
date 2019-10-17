@@ -187,10 +187,13 @@ def convert_ndarray(dst_dtype, array, executor):
 
 
 def change_dtype(src, dst, expr, params, executor):
-    expr = transform.InferType()(expr)
+    # TODO(gus) There's probably a better way to do this---update cdtype to work
+    # over modules
+    expr = transform.InferType()(relay.Module.from_expr(expr))
     cdtype = relay.frontend.ChangeDatatype(src, dst)
-    expr = cdtype.visit(expr)
-    expr = transform.InferType()(expr)
+    expr = cdtype.visit(expr['main'])
+    expr = transform.InferType()(relay.Module.from_expr(expr))
+    expr = expr['main']
     #raise "pause"
     params = dict(
         (p, convert_ndarray(dst, params[p], executor)) for p in params)
