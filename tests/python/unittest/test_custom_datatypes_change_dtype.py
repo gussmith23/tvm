@@ -91,8 +91,6 @@ def setup():
     tvm.datatype.register("datatype_in_python", 132)
 
     def __datatype_in_python_add(a, b):
-        print(a)
-        print(b)
         return a + b
 
     tvm.datatype.register_op(
@@ -102,19 +100,15 @@ def setup():
         "llvm", "datatype_in_python")
 
     def __datatype_in_python_cast_to_float(value):
-        print(value)
         as_c_int32 = ctypes.c_int32(value)
         as_float = ctypes.c_float.from_address(
             ctypes.addressof(as_c_int32)).value
-        print("as float: {}".format(as_float))
         return as_float
 
     def __datatype_in_python_cast_from_float(value):
-        print(value)
         as_c_float = ctypes.c_float(value)
         as_int32 = ctypes.c_int32.from_address(
             ctypes.addressof(as_c_float)).value
-        print(as_int32)
         return as_int32
 
     tvm.datatype.register_op(
