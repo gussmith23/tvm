@@ -182,7 +182,7 @@ def create_lower_to_python_func(func, target, op, dtype, src_dtype=''):
         call_args = [
             _pack_buffer(x) if isinstance(x, _Buffer) else x for x in args
         ]
-        return _make.Call("int1", "tvm_call_packed", call_args,
+        return _make.Call(dtype, "tvm_call_packed", call_args,
                           _Call.Intrinsic, None, 0)
 
     def lower(op):
