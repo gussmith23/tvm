@@ -274,9 +274,9 @@ class BuiltinLower : public IRMutator {
       ConstInt32(arg_stack_begin),
       ConstInt32(arg_stack_begin + op->args.size() - 1)
     };
-    return Call::make(
-        Int(32), intrinsic::tvm_call_packed_lowered,
-        packed_args, Call::Intrinsic);
+
+    CHECK(op->type.code() == kDLInt || op->type.code() == kDLUInt || op->type.code() == kDLFloat);
+    return Call::make(op->type, intrinsic::tvm_call_packed_lowered, packed_args, Call::Intrinsic);
   }
 
   Expr MakeCallTracePacked(const Call *op, const Expr &e) {
