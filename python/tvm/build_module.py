@@ -495,7 +495,9 @@ def _build_for_device(flist, target, target_host):
 
     target_host = _target.create(target_host)
     fdevice = [ir_pass.LowerCustomDatatypes(x, target.target_name) for x in fdevice]
+    fdevice = [ir_pass.LowerTVMBuiltin(x) for x in fdevice]
     fhost = [ir_pass.LowerCustomDatatypes(x, target_host.target_name) for x in fhost]
+    fhost = [ir_pass.LowerTVMBuiltin(x) for x in fhost]
     fdevice = [ir_pass.LowerIntrin(x, target.target_name) for x in fdevice]
     fhost = [ir_pass.LowerIntrin(x, target_host.target_name) for x in fhost]
     fhost = [ir_pass.CombineContextCall(x) for x in fhost]
