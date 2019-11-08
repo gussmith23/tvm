@@ -402,7 +402,7 @@ def test_datatype_in_python():
     x_data = np.random.rand(5, 10, 5).astype(t1.dtype)
     y_data = np.random.rand(5, 10, 5).astype(t1.dtype)
 
-    ex = relay.create_executor("graph")
+    ex = relay.create_executor()
 
     correct = ex.evaluate(func)(x_data, y_data)
 
