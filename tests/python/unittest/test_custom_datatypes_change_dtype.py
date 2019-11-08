@@ -434,5 +434,5 @@ if __name__ == "__main__":
     # These all run very slowly:
     # test_conv2d()
     # test_models()
-    #test_datatype_in_python()
-    test_datatype_in_python_simple_cast()
+    test_datatype_in_python()
+    #test_datatype_in_python_simple_cast()
