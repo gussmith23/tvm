@@ -483,7 +483,8 @@ VisitExpr_(const Div* op) {
 
   // x / 2.0 = x * 0.5
   if (const FloatImm* ptr = op->b.as<FloatImm>()) {
-    CHECK(op->dtype.is_float());
+    // TODO(gus) is this right?
+    //CHECK(op->dtype.is_float());
     return op->a * make_const(op->b.dtype(), 1.0 / ptr->value);
   }
 
