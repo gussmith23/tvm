@@ -204,9 +204,9 @@ def change_dtype(src, dst, expr, params, executor):
         (p, convert_ndarray(dst, params[p], executor)) for p in params)
     return expr, params
 
+
 def run_ops(src_dtype, dst_dtype):
     """Run the same op, but with two different datatypes"""
-
     def check_unary_op(op, src_dtype, dst_dtype):
         t1 = relay.TensorType((5, 10, 5))
         x = relay.var("x", t1)
@@ -290,6 +290,7 @@ def run_model(get_workload, input_shape, src_dtype, dst_dtype):
     input = tvm.nd.array(np.random.rand(*input_shape).astype(src_dtype))
 
     correct = ex.evaluate(expr)(input, **params)
+                                                                **params)
 
     # Simplifying inference is essential right now, as batch norms (which get
     # removed) are broken with custom datatypes.
@@ -437,14 +438,15 @@ def run_conv2d(src_dtype, dst_dtype):
                     dilation=(3, 3))
 
 
-
 def test_ops():
     run_ops('float32', 'custom[posit]32')
+
 
 # disabled for now, because it's slow
 @nottest
 def test_conv2d():
     run_conv2d('float32', 'custom[posit]32')
+
 
 # disabled for now, because it's slow
 @nottest
@@ -452,6 +454,7 @@ def test_models():
     run_model(get_mobilenet, (3, 224, 224), 'float32', 'custom[posit]32')
     run_model(get_inception, (3, 299, 299), 'float32', 'custom[posit]32')
     run_model(get_resnet, (3, 224, 224), 'float32', 'custom[posit]32')
+
 
 if __name__ == "__main__":
     setup()
