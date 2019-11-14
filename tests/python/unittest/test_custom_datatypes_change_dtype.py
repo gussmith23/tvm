@@ -282,20 +282,21 @@ def run_ops(src_dtype, dst_dtype):
 
 
 def run_model(get_workload, input_shape, src_dtype, dst_dtype):
-    expr, params = get_workload()
+    module, params = get_workload()
 
     ex = relay.create_executor("graph")
 
     # Convert the input into the correct format.
     input = tvm.nd.array(np.random.rand(*input_shape).astype(src_dtype))
 
-    correct = ex.evaluate(expr)(input, **params)
+    correct = relay.create_executor("graph", module).evaluate()(input,
                                                                 **params)
 
     # Simplifying inference is essential right now, as batch norms (which get
     # removed) are broken with custom datatypes.
-    expr = relay.ir_pass.simplify_inference(expr)
-    expr, params = change_dtype(src_dtype, dst_dtype, expr, params, ex)
+    module = relay.transform.SimplifyInference()(module)
+    expr, params = change_dtype(src_dtype, dst_dtype, module['main'], params,
+                                ex)
 
     input = convert_ndarray(dst_dtype, input, ex)
 
