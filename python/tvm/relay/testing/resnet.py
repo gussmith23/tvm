@@ -140,12 +140,16 @@ def resnet(units,
     num_unit = len(units)
     assert num_unit == num_stages
     data = relay.var("data", shape=data_shape, dtype=dtype)
-    data = layers.batch_norm_infer(data=data, epsilon=2e-5, scale=False, name='bn_data')
+    # Not specified in the original paper
+    #data = layers.batch_norm_infer(data=data, epsilon=2e-5, scale=False, name='bn_data')
     (_, _, height, _) = data_shape
     if height <= 32:            # such as cifar10
         body = layers.conv2d(
             data=data, channels=filter_list[0], kernel_size=(3, 3),
             strides=(1, 1), padding=(1, 1), name="conv0")
+        body = layers.batch_norm_infer(data=body, epsilon=2e-5, name='bn0')
+    # TODO(gus): this branch is broken by my changes, probably. I'm dealing with
+    # cifar, so only care about the first branch.
     else:                       # often expected to be 224 such as imagenet
         body = layers.conv2d(
             data=data, channels=filter_list[0], kernel_size=(7, 7),
@@ -162,10 +166,10 @@ def resnet(units,
             body = residual_unit(
                 body, filter_list[i+1], (1, 1), True,
                 name='stage%d_unit%d' % (i + 1, j + 2), bottle_neck=bottle_neck)
-    bn1 = layers.batch_norm_infer(data=body, epsilon=2e-5, name='bn1')
-    relu1 = relay.nn.relu(data=bn1)
+    #bn1 = layers.batch_norm_infer(data=body, epsilon=2e-5, name='bn1')
+    #relu1 = relay.nn.relu(data=bn1)
     # Although kernel is not used here when global_pool=True, we should put one
-    pool1 = relay.nn.global_avg_pool2d(data=relu1)
+    pool1 = relay.nn.global_avg_pool2d(data=body)
     flat = relay.nn.batch_flatten(data=pool1)
     fc1 = layers.dense_add_bias(data=flat, units=num_classes, name='fc1')
     net = relay.nn.softmax(data=fc1)
