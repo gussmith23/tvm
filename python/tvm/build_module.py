@@ -381,48 +381,78 @@ def lower(sch,
     if isinstance(sch, schedule.Schedule):
         stmt = form_body(sch)
 
+    def print_current_state_of_stmt(msg, stmt):
+        print('===============PRINTING SCHEDULE BEING LOWERED================')
+        print(msg)
+        print()
+        print(stmt)
+        print()
+        print('===============END SCHEDULE================')
+        print()
+
+    print_current_state_of_stmt('before lowering passes', stmt)
+
     for f in lower_phase0:
         stmt = f(stmt)
+        print_current_state_of_stmt('after a phase 0 lowering pass', stmt)
+
 
     compact = ir_pass.VerifyCompactBuffer(stmt)
     binds, arg_list = get_binds(args, compact, binds)
 
     # Phase 1
     stmt = ir_pass.RewriteForTensorCore(stmt, sch, binds)
+    print_current_state_of_stmt('after RewriteForTensorCore', stmt)
     stmt = ir_pass.StorageFlatten(stmt, binds, 64, cfg.instrument_bound_checkers)
+    print_current_state_of_stmt('after StorageFlatten', stmt)
     stmt = ir_pass.CanonicalSimplify(stmt)
+    print_current_state_of_stmt('after CanonicalSimplify', stmt)
     for f in lower_phase1:
         stmt = f(stmt)
+        print_current_state_of_stmt('after a stage 1 pass', stmt)
 
     # Phase 2
     if not simple_mode:
         stmt = ir_pass.LoopPartition(stmt, cfg.partition_const_loop)
+        print_current_state_of_stmt('after LoopPartition', stmt)
     if cfg.disable_vectorize:
         stmt = ir_pass.SkipVectorize(stmt)
+        print_current_state_of_stmt('after SkipVectorize', stmt)
     else:
         stmt = ir_pass.VectorizeLoop(stmt)
+        print_current_state_of_stmt('after VectorizeLoop', stmt)
     stmt = ir_pass.InjectVirtualThread(stmt)
+    print_current_state_of_stmt('after InjectVirtualThread', stmt)
     stmt = ir_pass.InjectDoubleBuffer(stmt, cfg.double_buffer_split_loop)
+    print_current_state_of_stmt('after InjectDoubleBuffer', stmt)
     stmt = ir_pass.StorageRewrite(stmt)
+    print_current_state_of_stmt('after StorageRewrite', stmt)
     stmt = ir_pass.UnrollLoop(
         stmt,
         cfg.auto_unroll_max_step,
         cfg.auto_unroll_max_depth,
         cfg.auto_unroll_max_extent,
         cfg.unroll_explicit)
+    print_current_state_of_stmt('after UnrollLoop', stmt)
     for f in lower_phase2:
         stmt = f(stmt)
+        print_current_state_of_stmt('after a phase 2 pass', stmt)
 
     # Phase 3
     stmt = ir_pass.Simplify(stmt)
+    print_current_state_of_stmt('after Simplify', stmt)
     stmt = ir_pass.RemoveNoOp(stmt)
+    print_current_state_of_stmt('after RemoveNoOp', stmt)
     if not cfg.disable_select_rewriting:
         stmt = ir_pass.RewriteUnsafeSelect(stmt)
+        print_current_state_of_stmt('after RewriteUnsafeSelect', stmt)
     for f in lower_phase3:
         stmt = f(stmt)
+        print_current_state_of_stmt('after a phase 3 pass', stmt)
     # Instrument BoundCheckers
     if cfg.instrument_bound_checkers:
         stmt = ir_pass.InstrumentBoundCheckers(stmt)
+        print_current_state_of_stmt('after InstrumentBoundCheckers', stmt)
     if simple_mode:
         return stmt
 
