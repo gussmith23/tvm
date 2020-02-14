@@ -492,17 +492,46 @@ def _build_for_device(flist, target, target_host):
                 "Direct host side access to device memory is detected in %s. "
                 "Did you forget to bind?" % func.name)
         if func.func_type == container.LoweredFunc.MixedFunc:
+            def print_current_state_of_func(msg):
+                print('===PRINTING MIXEDFUNCS BEING SPLIT BETWEEN HOST AND DEVICES===')
+                print('in {}'.format(__file__))
+                print(msg)
+                print()
+                for x in func:
+                    print('----------{}----------'.format(x.name))
+                    print(x.body)
+                    print()
+                print('===============END MIXEDFUNCS================')
+                print()
+
+            print_current_state_of_func('before any passes')
             if current_build_config().detect_global_barrier:
                 func = ir_pass.ThreadSync(func, "global")
+                print_current_state_of_func('after global ThreadSync')
             func = ir_pass.ThreadSync(func, "shared")
+            print_current_state_of_func('after shared ThreadSync')
             func = ir_pass.ThreadSync(func, "warp")
+            print_current_state_of_func('after warp ThreadSync')
             func = ir_pass.InferFragment(func)
+            print_current_state_of_func('after InferFragment')
             warp_size = target.thread_warp_size
             func = ir_pass.LowerThreadAllreduce(func, warp_size)
+            print_current_state_of_func('after LowerThreadAllreduce')
             fsplits = [s for s in ir_pass.SplitHostDevice(func)]
             fhost.append(fsplits[0])
             for x in fsplits[1:]:
                 fdevice.append(x)
+
+            print('===PRINTING SPLIT FUNCTIONS===')
+            print('in {}'.format(__file__))
+            print('Host function:')
+            print(fsplits[0])
+            print()
+            for x in fsplits[1:]:
+                print('Device function:')
+                print(x)
+                print()
+            print('===END PRINTING SPLIT FUNCTIONS===')
         elif func.func_type == container.LoweredFunc.HostFunc:
             fhost.append(func)
         elif func.func_type == container.LoweredFunc.DeviceFunc:
