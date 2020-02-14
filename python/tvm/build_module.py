@@ -489,8 +489,22 @@ def _build_for_device(flist, target, target_host):
             "Specified target %s, but cannot find device code, did you do "
             "bind?" % target)
 
+    def print_current_state_of_fhost(msg):
+        print('===============PRINTING HOST FUNCTIONS================')
+        print(msg)
+        print()
+        for x in fhost:
+            print('----------{}----------'.format(x.name))
+            print(x.body)
+            print()
+        print('===============END HOST FUNCTIONS================')
+        print()
+
+    print_current_state_of_fhost('before any passes')
     fhost = [ir_pass.BindDeviceType(x, device_type) for x in fhost]
+    print_current_state_of_fhost('after BindDeviceType')
     fhost = [ir_pass.LowerTVMBuiltin(x) for x in fhost]
+    print_current_state_of_fhost('after LowerTVMBuiltin')
 
     if device_type == ndarray.cpu(0).device_type and target_host == target:
         assert not fdevice
@@ -498,9 +512,12 @@ def _build_for_device(flist, target, target_host):
     target_host = _target.create(target_host)
     fdevice = [ir_pass.LowerDeviceStorageAccessInfo(x) for x in fdevice]
     fhost = [ir_pass.LowerDeviceStorageAccessInfo(x) for x in fhost]
+    print_current_state_of_fhost('after LowerDeviceStorageAccessInfo')
     fdevice = [ir_pass.LowerIntrin(x, target.target_name) for x in fdevice]
     fhost = [ir_pass.LowerIntrin(x, target_host.target_name) for x in fhost]
+    print_current_state_of_fhost('after LowerDeviceStorageAccessInfo')
     fhost = [ir_pass.CombineContextCall(x) for x in fhost]
+    print_current_state_of_fhost('after CombineContextCall')
     mdev = codegen.build_module(fdevice, str(target)) if fdevice else None
 
     return fhost, mdev
