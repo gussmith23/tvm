@@ -497,10 +497,9 @@ def _build_for_device(flist, target, target_host):
                 print('in {}'.format(__file__))
                 print(msg)
                 print()
-                for x in func:
-                    print('----------{}----------'.format(x.name))
-                    print(x.body)
-                    print()
+                print('----------{}----------'.format(func.name))
+                print(func.body)
+                print()
                 print('===============END MIXEDFUNCS================')
                 print()
 
