@@ -30,6 +30,8 @@
 #include <stack>
 #include <unordered_set>
 
+#include <iostream>
+
 namespace tvm {
 namespace relay {
 namespace transform {
@@ -420,6 +422,13 @@ Module SequentialNode::operator()(const Module& module,
       mod = GetPass(name->value)(mod, pass_ctx);
     }
     mod = pass(mod, pass_ctx);
+
+    std::cout << "==========PRINTING RELAY MODULE DURING SEQUENTIAL PASSES===========" << std::endl;
+    std::cout << "at " << __FILE__ << ":" << __LINE__ << std::endl;
+    std::cout << "After " << pass_info->name << std::endl;
+    std::cout << PrettyPrint(mod) << std::endl;
+    std::cout << "==========END PRINTING RELAY MODULE DURING SEQUENTIAL PASSES===========" << std::endl;
+    std::cout << std::endl;
   }
   return mod;
 }
