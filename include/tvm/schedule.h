@@ -585,6 +585,7 @@ class ScheduleNode : public Object {
  * \return sch The created Schedule.
  */
 inline Schedule create_schedule(Array<Operation> ops) {
+  // TODO Print schedules prettily?
   return ScheduleNode::make(ops);
 }
 
