@@ -321,7 +321,7 @@ IRModule SequentialNode::operator()(IRModule mod,
                                     const PassContext& pass_ctx) const {
 
   bool print_ir = pass_info->print_ir;
-  if (print_ir) LOG(INFO) << "Before running passes:\n" << mod;
+  if (print_ir) tvm::transform::PrintIR("Before running passes:")(mod);
 
   for (const Pass& pass : passes) {
     CHECK(pass.defined()) << "Found undefined pass for optimization.";
@@ -332,7 +332,7 @@ IRModule SequentialNode::operator()(IRModule mod,
       mod = GetPass(it)(std::move(mod), pass_ctx);
     }
     mod = pass(std::move(mod), pass_ctx);
-    if (print_ir) LOG(INFO) << "After pass " << pass_info->name << ":\n" << mod;
+    if (print_ir) tvm::transform::PrintIR("After pass " + pass_info->name + ":")(mod);
   }
   return mod;
 }
