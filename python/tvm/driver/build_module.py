@@ -211,8 +211,10 @@ def lower(sch,
     if cfg.instrument_bound_checkers:
         pass_list += [tvm.tir.transform.InstrumentBoundCheckers()]
 
-    optimize = tvm.transform.Sequential(pass_list)
+    optimize = tvm.transform.Sequential(pass_list, print_ir=True)
+    print('====Optimizations in ' + __file__ + ' ' + lower.__name__ + '====')
     mod = optimize(mod)
+    print('====End optimizations in ' + __file__ + ' ' + lower.__name__ + '====')
     return mod
 
 
@@ -257,7 +259,9 @@ def _build_for_device(input_mod, target, target_host):
                   tvm.tir.transform.LowerThreadAllreduce(),
                   tvm.tir.transform.MakePackedAPI(),
                   tvm.tir.transform.SplitHostDevice()]
-    mod_mixed = tvm.transform.Sequential(opt_mixed)(mod_mixed)
+    print('====Mixed optimizations in ' + __file__ + ' ' + _build_for_device.__name__ + '====')
+    mod_mixed = tvm.transform.Sequential(opt_mixed, print_ir=True)(mod_mixed)
+    print('====End mixed optimizations in ' + __file__ + ' ' + _build_for_device.__name__ + '====')
 
 
     # device optimizations
@@ -268,8 +272,11 @@ def _build_for_device(input_mod, target, target_host):
          tvm.tir.transform.LowerWarpMemory(),
          tvm.tir.transform.Simplify(),
          tvm.tir.transform.LowerDeviceStorageAccessInfo(),
-         tvm.tir.transform.LowerIntrin()])
+         tvm.tir.transform.LowerIntrin()],
+        print_ir=True)
+    print('====Device optimizations in ' + __file__ + ' ' + _build_for_device.__name__ + '====')
     mod_dev = opt_device(mod_mixed)
+    print('====End device optimizations in ' + __file__ + ' ' + _build_for_device.__name__ + '====')
 
     # host optimizations
     opt_host = tvm.transform.Sequential(
@@ -280,8 +287,11 @@ def _build_for_device(input_mod, target, target_host):
          tvm.tir.transform.LowerTVMBuiltin(),
          tvm.tir.transform.LowerDeviceStorageAccessInfo(),
          tvm.tir.transform.LowerIntrin(),
-         tvm.tir.transform.CombineContextCall()])
+         tvm.tir.transform.CombineContextCall()],
+        print_ir=True)
+    print('====Host optimizations in ' + __file__ + ' ' + _build_for_device.__name__ + '====')
     mod_host = opt_host(mod_mixed)
+    print('====End host optimizations in ' + __file__ + ' ' + _build_for_device.__name__ + '====')
 
     if device_type == ndarray.cpu(0).device_type and target_host == target:
         assert len(mod_dev.functions) == 0
