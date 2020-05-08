@@ -222,8 +222,12 @@ class Interpreter(Executor):
         seq = tvm.transform.Sequential([transform.SimplifyInference(),
                                         transform.FuseOps(0),
                                         transform.ToANormalForm(),
-                                        transform.InferType()])
-        return seq(self.mod)
+                                        transform.InferType()],
+                                       print_ir=True)
+        print('====Relay optimizations in ' + __file__ + ' ' + Interpreter.optimize.__name__ + '====')
+        optimized = seq(self.mod)
+        print('====End Relay optimizations in ' + __file__ + ' ' + Interpreter.optimize.__name__ + '====')
+        return optimized
 
     def _make_executor(self, expr=None):
         if expr is None or isinstance(expr, GlobalVar):
