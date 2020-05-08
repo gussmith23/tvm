@@ -177,12 +177,16 @@ class Sequential(Pass):
 
     required : Optional[List[str]]
         The list of passes that the sequential pass is dependent on.
+
+    print_ir : Optional[bool]
+        Whether to print the IR before/after each transformation.
     """
     def __init__(self,
                  passes=None,
                  opt_level=2,
                  name="sequential",
-                 required=None):
+                 required=None,
+                 print_ir=False):
         passes = passes if passes else []
         if not isinstance(passes, (list, tuple)):
             raise TypeError("passes must be a list of Pass objects.")
@@ -192,7 +196,7 @@ class Sequential(Pass):
             raise TypeError("Required is expected to be the type of list/tuple.")
 
         self.__init_handle_by_constructor__(_ffi_transform_api.Sequential,
-                                            passes, opt_level, name, required)
+                                            passes, opt_level, name, required, print_ir)
 
 
 def _wrap_class_module_pass(pass_cls, pass_info):

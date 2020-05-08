@@ -201,12 +201,16 @@ class PassInfoNode : public Object {
   /*! \brief The passes that are required to perform the current pass. */
   Array<runtime::String> required;
 
+  /*! \brief Whether to print the IR before and after the pass. */
+  bool print_ir;
+
   PassInfoNode() = default;
 
   void VisitAttrs(AttrVisitor* v) {
     v->Visit("opt_level", &opt_level);
     v->Visit("name", &name);
     v->Visit("required", &required);
+    v->Visit("print_ir", &print_ir);
   }
 
   static constexpr const char* _type_key = "transform.PassInfo";
@@ -225,10 +229,12 @@ class PassInfo : public ObjectRef {
    * \param opt_level The optimization level
    * \param name Name of the pass.
    * \param required  The passes that are required to perform the current pass.
+   * \param print_ir Whether to print the IR before and after the pass.
    */
   TVM_DLL PassInfo(int opt_level,
                    std::string name,
-                   Array<runtime::String> required);
+                   Array<runtime::String> required,
+                   bool print_ir = false);
 
   TVM_DEFINE_OBJECT_REF_METHODS(PassInfo, ObjectRef, PassInfoNode);
 };

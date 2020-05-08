@@ -213,11 +213,13 @@ class SequentialNode : public PassNode {
 
 PassInfo::PassInfo(int opt_level,
                    std::string name,
-                   tvm::Array<runtime::String> required) {
+                   tvm::Array<runtime::String> required,
+                   bool print_ir) {
   auto pass_info = make_object<PassInfoNode>();
   pass_info->opt_level = opt_level;
   pass_info->name = std::move(name);
   pass_info->required = std::move(required);
+  pass_info->print_ir = print_ir;
   data_ = std::move(pass_info);
 }
 
@@ -317,6 +319,10 @@ Pass GetPass(const std::string& pass_name) {
 // ordering problem needs to be handled in the future.
 IRModule SequentialNode::operator()(IRModule mod,
                                     const PassContext& pass_ctx) const {
+
+  bool print_ir = pass_info->print_ir;
+  if (print_ir) LOG(INFO) << "Before running passes:\n" << mod;
+
   for (const Pass& pass : passes) {
     CHECK(pass.defined()) << "Found undefined pass for optimization.";
     const PassInfo& pass_info = pass->Info();
@@ -326,6 +332,7 @@ IRModule SequentialNode::operator()(IRModule mod,
       mod = GetPass(it)(std::move(mod), pass_ctx);
     }
     mod = pass(std::move(mod), pass_ctx);
+    if (print_ir) LOG(INFO) << "After pass " << pass_info->name << ":\n" << mod;
   }
   return mod;
 }
@@ -395,7 +402,8 @@ TVM_REGISTER_GLOBAL("transform.Sequential")
   int opt_level = args[1];
   std::string name = args[2];
   tvm::Array<runtime::String> required = args[3];
-  PassInfo pass_info = PassInfo(opt_level, name, required);
+  bool print_ir = args[4];
+  PassInfo pass_info = PassInfo(opt_level, name, required, print_ir);
   *ret = Sequential(passes, pass_info);
 });
 
