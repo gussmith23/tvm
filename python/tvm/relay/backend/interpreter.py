@@ -161,15 +161,6 @@ class Executor(object):
         val : Union[function, Object]
             The evaluation result.
         """
-        if expr:
-            print('==========PRINTING EXPR TO BE EVALUATED============')
-            print(expr)
-            print('==========END EXPR============')
-        else:
-            print('==========PRINTING MODULE TO BE EVALUATED============')
-            print(self.mod)
-            print('==========END MODULE============')
-
         if binds:
             scope_builder = ScopeBuilder()
             for key, value in binds.items():
