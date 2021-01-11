@@ -411,10 +411,11 @@ def get_summary_columns(summary):
 
 
 def get_analysis_columns(analysis):
+    # TODO(gus) should always return the same order
     analysis_columns = set()
     for analysis_data in analysis.values():
         analysis_columns.update(_dictionary_to_column_paths(analysis_data))
-    return analysis_columns
+    return list(analysis_columns)
 
 
 def get_columns(data: Dict[_Expr, Dict]):
