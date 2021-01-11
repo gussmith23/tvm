@@ -415,7 +415,8 @@ def get_analysis_columns(analysis):
     analysis_columns = set()
     for analysis_data in analysis.values():
         analysis_columns.update(_dictionary_to_column_paths(analysis_data))
-    return list(analysis_columns)
+    # This is our hack to attempt to give the same order
+    return list(sorted(analysis_columns))
 
 
 def get_columns(data: Dict[_Expr, Dict]):
