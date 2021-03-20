@@ -269,6 +269,7 @@ list(APPEND COMPILER_SRCS ${RELAY_QNN_SRCS})
 file(GLOB DATATYPE_SRCS src/target/datatype/*.cc)
 list(APPEND COMPILER_SRCS ${DATATYPE_SRCS})
 list(APPEND COMPILER_SRCS "src/target/datatype/myfloat/myfloat.cc")
+list(APPEND COMPILER_SRCS "src/relay/backend/contrib/rtml/codegen.cc")
 
 file(GLOB RUNTIME_SRCS
   src/runtime/*.cc
