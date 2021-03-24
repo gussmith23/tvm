@@ -1,5 +1,7 @@
 #include <tvm/runtime/registry.h>
 
+#include <numeric>
+
 #include "../../utils.h"
 #include "../codegen_c/codegen_c.h"
 
@@ -9,20 +11,72 @@ namespace contrib {
 
 using namespace backend;
 
+inline size_t GetShape1DSize(const Type& type) {
+  const auto shape = GetShape(type);
+  return std::accumulate(shape.begin(), shape.end(), 1, std::multiplies<int>());
+}
+
 class CodegenRTML : public MemoizedExprTranslator<std::vector<Output>>, public CodegenCBase {
  public:
   explicit CodegenRTML(const std::string& id) { this->ext_func_id_ = id; }
-  std::string JIT(const std::vector<Output>& out) { return ""; }
+  std::string JIT(const std::vector<Output>& out) {
+    return JitImpl(ext_func_id_, ext_func_args_, buf_decl_, ext_func_body_, const_array_name_, out);
+  }
+
+  std::vector<Output> VisitExpr_(const VarNode* node) final {
+    ext_func_args_.push_back(GetRef<Var>(node));
+    Output output;
+    output.name = node->name_hint();
+    return {output};
+  }
 
   std::vector<Output> VisitExpr_(const CallNode* call) final {
-    GenerateBodyOutput ret;
     const auto* op_node = call->op.as<OpNode>();
     const auto op_name = GetRef<Op>(op_node)->name;
     CHECK(op_name == "nn.dense");
+    CHECK(call->args.size() == 2);
+    auto res = VisitExpr((call->args[0]));
+    CHECK(res.size() == 1);
+    const auto activations_output = res[0];
+    res = VisitExpr((call->args[1]));
+    CHECK(res.size() == 1);
+    const auto weights_output = res[0];
 
-    // buf_decl_.insert(buf_decl_.end(), ret.buffers.begin(), ret.buffers.end());
-    // ext_func_body_.push_back(ret.decl);
-    return ret.outputs;
+    const auto activations_type = call->args[0]->checked_type().as<TensorTypeNode>();
+    CHECK(activations_type);
+    CHECK(activations_type->shape.size() == 2);
+    const auto batch_size = activations_type->shape[0].as<IntImmNode>()->value;
+    const auto input_vector_size = activations_type->shape[1].as<IntImmNode>()->value;
+
+    const auto weights_type = call->args[1]->checked_type().as<TensorTypeNode>();
+    CHECK(weights_type);
+    CHECK(weights_type->shape.size() == 2);
+    CHECK(weights_type->shape[1].as<IntImmNode>()->value == input_vector_size);
+    const auto output_vector_size = weights_type->shape[0].as<IntImmNode>()->value;
+
+    Output output;
+    const std::string out = "buf_" + std::to_string(buf_idx_++);
+    const auto out_size = GetShape1DSize(call->checked_type());
+    output.name = out;
+    output.size = out_size;
+    output.dtype = GetDtypeString(call->checked_type().as<TensorTypeNode>());
+    output.need_copy = true;
+    buf_decl_.push_back("float* " + out + " = (float*)std::malloc(4 * " + std::to_string(out_size) +
+                        ");");
+
+    std::ostringstream rtml_call;
+    rtml_call << "rtml_systolic_array_weight_stationary_fc("  //
+              << "0,"                                         // Hardware ID
+              << out << ","                                   //
+              << activations_output.name << ", "              //
+              << weights_output.name << ", "                  //
+              << input_vector_size << ","                     //
+              << output_vector_size << ","                    //
+              << batch_size << ");";                          //
+
+    ext_func_body_.push_back(rtml_call.str());
+
+    return {output};
   }
 
  private:
@@ -32,8 +86,13 @@ class CodegenRTML : public MemoizedExprTranslator<std::vector<Output>>, public C
     std::vector<Output> outputs;
   };
 
-  std::string ext_func_id_;
-  Array<String> const_vars_;
+  size_t buf_idx_{0};
+  std::string ext_func_id_{""};
+  Array<String> const_vars_{};
+  Array<Var> ext_func_args_{};
+  std::vector<std::string> ext_func_body_{};
+  std::vector<std::string> buf_decl_{};
+  std::string const_array_name_{""};
 
   friend class RTMLModuleCodegen;
 };
