@@ -114,12 +114,17 @@ class RTMLModuleCodegen : public CSourceModuleCodegenBase {
 
   runtime::Module CreateCSourceModule(const ObjectRef& ref) {
     // Create headers
-    // code_stream_ << "#include <tvm/runtime/c_runtime_api.h>\n";
+    code_stream_ << "#include <tvm/runtime/c_runtime_api.h>\n";
     // code_stream_ << "#include <tvm/runtime/container.h>\n";
     // code_stream_ << "#include <tvm/runtime/packed_func.h>\n";
-    // code_stream_ << "#include <dlpack/dlpack.h>\n";
+    code_stream_ << "#include <dlpack/dlpack.h>\n";
     // code_stream_ << "using namespace tvm::runtime;\n";
     // code_stream_ << "using namespace tvm::runtime::contrib;\n";
+    code_stream_ << "#include <cstring>\n";
+    code_stream_ << "#include <cstdlib>\n";
+    code_stream_
+        << "extern \"C\" void "
+           "rtml_systolic_array_weight_stationary_fc(int,float*,float*,float*,int,int,int);\n";
     code_stream_ << "\n";
 
     CHECK(ref->IsInstance<FunctionNode>());
