@@ -1,3 +1,4 @@
+#include <tvm/relay/attrs/nn.h>
 #include <tvm/runtime/registry.h>
 
 #include <numeric>
@@ -33,7 +34,15 @@ class CodegenRTML : public MemoizedExprTranslator<std::vector<Output>>, public C
   std::vector<Output> VisitExpr_(const CallNode* call) final {
     const auto* op_node = call->op.as<OpNode>();
     const auto op_name = GetRef<Op>(op_node)->name;
-    CHECK(op_name == "nn.dense");
+    if (op_name == "nn.dense")
+      return dense(call);
+    else if (op_name == "nn.conv2d")
+      return conv2d(call);
+    else
+      CHECK(false);
+  }
+
+  std::vector<Output> dense(const CallNode* call) {
     CHECK(call->args.size() == 2);
     auto res = VisitExpr((call->args[0]));
     CHECK(res.size() == 1);
@@ -73,6 +82,79 @@ class CodegenRTML : public MemoizedExprTranslator<std::vector<Output>>, public C
               << input_vector_size << ","                     //
               << output_vector_size << ","                    //
               << batch_size << ");";                          //
+
+    ext_func_body_.push_back(rtml_call.str());
+
+    return {output};
+  }
+
+  std::vector<Output> conv2d(const CallNode* call) {
+    CHECK(call->args.size() == 2);
+    auto res = VisitExpr((call->args[0]));
+    CHECK(res.size() == 1);
+    const auto activations_output = res[0];
+    res = VisitExpr((call->args[1]));
+    CHECK(res.size() == 1);
+    const auto weights_output = res[0];
+
+    const auto attrs = call->attrs.as<Conv2DAttrs>();
+    CHECK(attrs);
+    CHECK(attrs->data_layout == "NHWC");
+    CHECK(attrs->groups == 1);
+    CHECK(attrs->kernel_layout == "HWIO");
+    CHECK(attrs->padding.size() == 4);
+    CHECK(attrs->padding[0].as<IntImmNode>()->value == 0);
+    CHECK(attrs->padding[1].as<IntImmNode>()->value == 0);
+    CHECK(attrs->padding[2].as<IntImmNode>()->value == 0);
+    CHECK(attrs->padding[3].as<IntImmNode>()->value == 0);
+
+    const auto activations_type = call->args[0]->checked_type().as<TensorTypeNode>();
+    CHECK(activations_type);
+    CHECK(activations_type->shape.size() == 4);
+    const auto n = activations_type->shape[0].as<IntImmNode>()->value;
+    const auto h = activations_type->shape[1].as<IntImmNode>()->value;
+    const auto w = activations_type->shape[2].as<IntImmNode>()->value;
+    const auto c = activations_type->shape[3].as<IntImmNode>()->value;
+
+    const auto weights_type = call->args[1]->checked_type().as<TensorTypeNode>();
+    CHECK(weights_type);
+    CHECK(weights_type->shape.size() == 4);
+    const auto kh = weights_type->shape[0].as<IntImmNode>()->value;
+    const auto kw = weights_type->shape[1].as<IntImmNode>()->value;
+    const auto kc = weights_type->shape[2].as<IntImmNode>()->value;
+    const auto o = weights_type->shape[3].as<IntImmNode>()->value;
+    CHECK(kc == c);
+
+    const auto stride_h = attrs->strides[0].as<IntImmNode>()->value;
+    const auto stride_w = attrs->strides[1].as<IntImmNode>()->value;
+
+    Output output;
+    const std::string out = "buf_" + std::to_string(buf_idx_++);
+    const auto out_size = GetShape1DSize(call->checked_type());
+    output.name = out;
+    output.size = out_size;
+    output.dtype = GetDtypeString(call->checked_type().as<TensorTypeNode>());
+    output.need_copy = true;
+    buf_decl_.push_back("float* " + out + " = (float*)std::malloc(4 * " + std::to_string(out_size) +
+                        ");");
+
+    std::ostringstream rtml_call;
+    rtml_call << "rtml_systolic_array_weight_stationary_conv2d"
+                 "_nhwc_hwio_prepadded_variable_batch_"
+                 "size("                          //
+              << "0,"                             // Hardware ID
+              << out << ","                       //
+              << activations_output.name << ", "  //
+              << weights_output.name << ", "      //
+              << h << ","                         //
+              << w << ","                         //
+              << kh << ","                        //
+              << kw << ","                        //
+              << c << ","                         //
+              << o << ","                         //
+              << stride_h << ","                  //
+              << stride_w << ","                  //
+              << n << ");";                       //
 
     ext_func_body_.push_back(rtml_call.str());
 
@@ -125,6 +207,22 @@ class RTMLModuleCodegen : public CSourceModuleCodegenBase {
     code_stream_
         << "extern \"C\" void "
            "rtml_systolic_array_weight_stationary_fc(int,float*,float*,float*,int,int,int);\n";
+    code_stream_
+        << "extern \"C\" void "
+           "rtml_systolic_array_weight_stationary_conv2d_nhwc_hwio_prepadded_variable_batch_size("
+           "int hardware_id,"
+           "float * out,"
+           "float * activations,"
+           "float * weights,"
+           "int h,"
+           "int w,"
+           "int kernel_h,"
+           "int kernel_w,"
+           "int in_channels,"
+           "int out_channels,"
+           "int stride_h,"
+           "int stride_w,"
+           "int n);";
     code_stream_ << "\n";
 
     CHECK(ref->IsInstance<FunctionNode>());
